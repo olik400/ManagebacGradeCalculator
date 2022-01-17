@@ -1,25 +1,59 @@
 jQuery(document).ready(function() {
+    console.log("ready");
     chrome.storage.sync.get(['settings'], function(result) {
         settings = result.settings;
+
+        if ("settings" in result == false) {
+            settings = {ac: true, cc: true, im: true, pe: true, gc: true, ca: "pw", pc: false};
+        };
+
         if(settings.gc) {
+            console.log("nice");
             clearInterval(checkExist);
 
             var categories = []; //category array
 
+            //console.log(categories)
+
             var studentClass = $('.content-block-header h3').text();
             var studentClass1 = studentClass;
 
-            var checkExist = setInterval(function() {
+            function loadPage() {
+                let currentClass = window.location.toString().replace(new RegExp('.*' + "classes/"), '').replace(/\D/g, "");
+                //console.log("Current Class = " + currentClass)
+
+                //create tableDiv if it does not exist
+                //all the custom stuff is in table div
+                var tableDiv
+                if ($('#tableDiv').length == 0) {
+                    var tableDiv = document.createElement('div');
+                    tableDiv.id = "tableDiv";
+                    $('.content-block').append(tableDiv);
+                    tableDiv.setAttribute("displayingClass", currentClass);
+
+                    tableDiv.style.padding = "15px 0px";
+                
+
+                } else {
+                    tableDiv = $('#tableDiv').first()
+                    if (tableDiv.getAttribute("displayingClass") != currentClass) {
+                        $(tableDiv).remove()
+                    }
+                };
+                
+
                 if ($('.highcharts-axis').length && $('#result').length == 0) {
                     clearInterval(checkExist);
-                    console.log("Exists!");
+                    //console.log("Exists!");
                     calculate();
-                    $('.nav:nth-child(4) > li:nth-child(2) > a')[0].click();
+                    $('#calculateButton').click();
                 } else if ($('.highcharts-axis').length && $('#result').length && studentClass !== studentClass1) {
                     clearInterval(checkExist);
-                    $('.nav:nth-child(4) > li:nth-child(2) > a')[0].click();
+                    $('#calculateButton').click();
                 }
-            }, 32)
+            };
+
+            var checkExist = setInterval(loadPage, 500)
 
             let blueSum =0; //4 categories per assigement grading system
             let assigements =0; //4 categories per assigement grading system
@@ -57,7 +91,7 @@ jQuery(document).ready(function() {
                 } else if($('.sidebar-items-list').length) { //Standard most precise search alogorithm
                     $('.sidebar-items-list .list-item:not(.list-item-head)').each(function(i) { //most current version
                         var cat = {} //category object
-                        cat.name = $(this).children().first().text(); //gets category name
+                        cat.name = $(this).children().first().text().replace(/(\r\n|\n|\r)/gm, "");; //gets category name + remove new lines
                         cat.weight = Number($(this).children().eq(1).text().replace(/[^0-9]+/g, '')); //gets category weight
                         cat.grades = getGrade(cat.name) //gets category grades
                         cat.avg = getAvg(cat.grades) //gets avarage of category
@@ -81,15 +115,23 @@ jQuery(document).ready(function() {
                 //gets category grades
                 function getGrade(cat) {
                     var grades = [];
-                    $('.label-score').each(function(i) {
-                        if (cat.indexOf($(this).parent().parent().children().last().text()) > -1) {
-                            var a = $(this).text();
-                            var b = a.split('/').map(function(item) {
-                                return parseInt(item, 10);
-                            });
-                            grades.push(Math.round(b[0] / b[1] * 100 * 100) / 100);
+                    
+                    $('.tasks-list-container').find(".label:contains(" + cat + ")").each(function(i) {
+                        var a = $(this).parentsUntil('.tasks-list-container').last().find(".points").text()
+                        var b = a.split('/').map(function(item) {
+                            return parseInt(item, 10);
+                        });
+                        if (b[0] > -1) {
+                            let grade = Math.round(b[0] / b[1] * 100 * 100) / 100
+                            grades.push(grade);
+
+                            if (settings.pc) {
+                                $(this).parentsUntil('.tasks-list-container').last().find(".grade").text(String(grade) + "%")
+                            };
                         }
+
                     })
+
                     return grades;
                 }
 
@@ -134,11 +176,15 @@ jQuery(document).ready(function() {
                 result.style.float = "right";
                 result.id = "result";
                 if(blueSum === 0) {
-                    result.innerHTML = "Grade: " + fresult();
+                    let res = fresult();
+                    $('.page-head-tile').find('h3').each(function() {
+                        this.innerHTML = "Final Grade: " + res;
+                    });
+                    result.innerHTML = "Grade: " + res;
                 } else {
                     result.innerHTML = "Average points per assigement: " + Math.round(((blueSum-1) / (assigements / 4)) * 100) / 100;
                 }
-                $('.content-block > h3:nth-child(3)').append(result);
+                $('#divTable').append(result);
 
 
                 //The code that creates the table in the bottom (mix of jQuery and default javascript -_-)
@@ -153,9 +199,9 @@ jQuery(document).ready(function() {
                 var tbdy = document.createElement('tbody');
 
                 if(blueSum < 1) {
-                    body.append(info);
+                    tableDiv.append(info);
                     tbl.append(tbdy);
-                    body.append(tbl);
+                    tableDiv.append(tbl);
                 }
                 for (var i = 0; i < categories.length; i++) {
                     $('#gradeChart > tbody:last-child').append('<tr id="' + categories[i].name.replace(/[^a-z0-9]/gi, '') + 'tr"><td style="padding: 5px;">' + categories[i].name + '</td><td style="padding: 5px;">' + categories[i].weight + '%</td></tr>');
@@ -181,12 +227,12 @@ jQuery(document).ready(function() {
                 var text = document.createTextNode("Calculate");
                 but.setAttribute('id', 'calculateButton');
                 but.append(text);
-                body.append(but);
+                tableDiv.append(but);
 
                 $('#calculateButton').click(function() {
                     gradeTableToObject();
                     $('#result2').remove();
-                    $('.content-block:last').append('<h2 id="result2">Grade: ' + fresult() + '</h2>')
+                    $('#tableDiv').append('<h2 id="result2">Grade: ' + fresult() + '</h2>')
                 });
 
                 //creates the categories from the table to calculate the final grade
