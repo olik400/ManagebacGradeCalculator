@@ -1,5 +1,5 @@
 jQuery(document).ready(function() {
-    console.log("ready");
+    //console.log("ready");
     chrome.storage.sync.get(['settings'], function(result) {
         settings = result.settings;
 
@@ -8,7 +8,7 @@ jQuery(document).ready(function() {
         };
 
         if(settings.gc) {
-            console.log("nice");
+            //console.log("nice");
             clearInterval(checkExist);
 
             var categories = []; //category array
@@ -25,32 +25,30 @@ jQuery(document).ready(function() {
                 //create tableDiv if it does not exist
                 //all the custom stuff is in table div
                 var tableDiv
-                if ($('#tableDiv').length == 0) {
-                    var tableDiv = document.createElement('div');
+
+                function createTableDiv() {
+                    tableDiv = document.createElement('div');
                     tableDiv.id = "tableDiv";
                     $('.content-block').append(tableDiv);
                     tableDiv.setAttribute("displayingClass", currentClass);
-
                     tableDiv.style.padding = "15px 0px";
-                
-
-                } else {
-                    tableDiv = $('#tableDiv').first()
-                    if (tableDiv.getAttribute("displayingClass") != currentClass) {
-                        $(tableDiv).remove()
-                    }
+                }
+                if ($('#tableDiv').length == 0) {
+                    createTableDiv()
                 };
                 
+                if (tableDiv) {
+                        if ($('.highcharts-axis').length && $('#result').length == 0) {
+                            clearInterval(checkExist);
+                            //console.log("Exists!");
+                            calculate();
+                            $('#calculateButton').click();
+                        } else if ($('.highcharts-axis').length && $('#result').length && studentClass !== studentClass1) {
+                            clearInterval(checkExist);
+                            $('#calculateButton').click();
+                        }
+                };
 
-                if ($('.highcharts-axis').length && $('#result').length == 0) {
-                    clearInterval(checkExist);
-                    //console.log("Exists!");
-                    calculate();
-                    $('#calculateButton').click();
-                } else if ($('.highcharts-axis').length && $('#result').length && studentClass !== studentClass1) {
-                    clearInterval(checkExist);
-                    $('#calculateButton').click();
-                }
             };
 
             var checkExist = setInterval(loadPage, 500)
