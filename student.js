@@ -14,7 +14,9 @@ jQuery(document).ready(function() {
                         cc: true,
                         im: true,
                         pe: true,
-                        ca: "pw"
+                        ca: "pw",
+                        gc: true,
+                        pc: false,
                     }
                     chrome.storage.sync.set({settings: settings}, function() {
                         console.log('Value set');
@@ -69,11 +71,13 @@ jQuery(document).ready(function() {
                 $('div[popid="'+id+'"]').remove();
             } else {
                 let pos = $(this).offset();
+                let dashPos = $('.js-dashboard-widget-calendar').offset()
+                console.log(pos,dashPos)
                 $(this).append(
                     `<div 
                         popid="${id}"
                         class="popover in" 
-                        style="display:block; top:${pos.top+12}px;left:${pos.left}px ">
+                        style="display:block; top:${pos.top+12-dashPos.top}px;left:${pos.left-dashPos.left}px ">
                         
                         <div style="padding: 5px">
                             <p>Set importance based on color:</p>
